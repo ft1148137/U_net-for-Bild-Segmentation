@@ -63,7 +63,7 @@ def upconv_2D(tensor, n_filter, name_):
 	    activation=tf.nn.relu,
         use_bias=True,
         bias_initializer=tf.zeros_initializer(),
-        kernel_regularizer=tf.contrib.layers.l2_regularizer(0.01),
+        ##kernel_regularizer=tf.contrib.layers.l2_regularizer(0.01),
         name = name_)
 
 def randomRotation(image, mask,mode=Image.BICUBIC):
@@ -78,7 +78,7 @@ def randomRotation(image, mask,mode=Image.BICUBIC):
 
 def conv2d(input_tensor, depth, kernel, name, strides=(1, 1), padding="SAME"):
     return tf.layers.conv2d(input_tensor, filters=depth, kernel_size=[kernel,kernel],
-                            strides=strides, padding=padding, kernel_regularizer=tf.contrib.layers.l2_regularizer(0.01),
+                            strides=strides, padding=padding,## kernel_regularizer=tf.contrib.layers.l2_regularizer(0.01),
                             activation=tf.nn.relu,
                             use_bias=True,
                             bias_initializer=tf.zeros_initializer())
@@ -214,6 +214,7 @@ conv9 = conv2d(up9, 32, 3, "conv9.1")
 conv9 = conv2d(conv9, 32, 3, "conv9.2")
 print up9
 logit = tf.layers.conv2d(conv9, 1, (1, 1),name='final',padding='same')
+logit = logit 
 print "logit: ",logit
 
 
@@ -223,14 +224,14 @@ print "logit: ",logit
 ##logit = tf.nn.softmax(logit)
 
 ##logit = tf.nn.sigmoid(logit)
-##loss = tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits(labels = Y_,logits = logit))
+##loss = tf.reduce_sum(tf.nn.softmax_cross_entropy_with_logits_v2(labels = Y_,logits = logit))
 ##loss = IOU_(logit,Y_)
 loss = tf.losses.sigmoid_cross_entropy(Y_, logit)
 ##loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=Y_,logits=logit))
 ##print loss
-optimizer = tf.train.AdamOptimizer(lr).minimize(loss)
-
-
+##optimizer = tf.train.AdamOptimizer(lr).minimize(loss)
+##optimizer = tf.train.MomentumOptimizer(lr,0.9).minimize(loss)
+optimizer = tf.train.RMSPropOptimizer(lr).minimize(loss)
 
 # init
 init = tf.global_variables_initializer()
@@ -288,7 +289,6 @@ for i in range(iterations):
     tf.summary.histogram("loss", loss_value)
 
     if batch_count == 0:
-        rate = rate/2
         p = np.random.permutation(len(X_test))
         images = X_test[p]
         labels = Y_test[p]
@@ -327,12 +327,22 @@ plt.show()
 test_image = np.reshape(test_image, [1,IMG_HEIGHT , IMG_WIDTH, IMG_CHANNELS])
 test_mask = sess.run([logit],feed_dict={X: test_image})
 test_mask = np.reshape(test_mask, [IMG_HEIGHT , IMG_WIDTH, 1])
+
+##for i in range(IMG_HEIGHT):
+##     for j in range(IMG_WIDTH):
+##        if sigmoid(test_mask[i][j]) > 0.7:
+##            test_mask[i][j] = 255
+##        else:
+##            test_mask[i][j] = 0
+##imshow(test_mask.squeeze().astype(np.uint8))
+##plt.show()
+
+
 for i in range(IMG_HEIGHT):
      for j in range(IMG_WIDTH):
-        test_mask[i][j] = round(sigmoid(test_mask[i][j])*255)
+        test_mask[i][j] = round(sigmoid(test_mask[i][j]))*255
 imshow(test_mask.squeeze().astype(np.uint8))
 plt.show()
-
 
 
 
